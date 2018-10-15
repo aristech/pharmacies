@@ -11,7 +11,10 @@ import {
   CardText,
   CardBody,
   CardTitle,
-  CardSubtitle
+  CardSubtitle,
+  Pagination,
+  PaginationItem,
+  PaginationLink
 } from "reactstrap";
 import "./App.css";
 
@@ -103,7 +106,9 @@ class App extends Component {
     area: "Αττική",
     select: "",
     splitButtonOpen: false,
-    dropdownOpen: false
+    dropdownOpen: false,
+    currentPage: 1,
+    itemsPerPage: 12
   };
   async componentDidMount() {
     const proxyUrl = "https://morning-dawn-46551.herokuapp.com/",
@@ -150,12 +155,15 @@ class App extends Component {
   };
 
   render() {
-    const array = this.state.data.map(arr => arr.perioxi);
+    const { data, cities, currentPage, itemsPerPage } = this.state;
+    const array = data.map(arr => arr.perioxi);
     const unique = array.filter(this.onlyUnique);
+
     const areas = unique.map((area, i) => {
       return <option key={i}>{area}</option>;
     });
-    const showCities = Object.keys(this.state.cities).map((city, i) => {
+
+    const showCities = Object.keys(cities).map((city, i) => {
       return (
         <DropdownItem
           key={i}
@@ -166,34 +174,57 @@ class App extends Component {
         </DropdownItem>
       );
     });
-    const cards = this.state.data
-      .filter(item => {
-        return item.perioxi.indexOf(this.state.select) >= 0;
-      })
-      .map((card, i) => {
-        return (
-          <Card key={i} style={{ margin: 3, padding: 1, width: 400 }}>
-            <CardBody>
-              <CardTitle>{card.onoma}</CardTitle>
-              <CardSubtitle>
-                {card.odos1}, {card.perioxi} , {card.thlefono}
-              </CardSubtitle>
-              <CardText>
-                {card.anoixta1} {card.anoixta2}
-              </CardText>
-              <a
-                rel="noopener noreferrer"
-                target="_blank"
-                href={`https://google.com//maps/place/${card.lat}+${
-                  card.lon
-                }/@${card.lat},${card.lon},18z`}
-              >
-                <Button color="info">Map</Button>
-              </a>
-            </CardBody>
-          </Card>
-        );
-      });
+    const indexOfLastItems = currentPage * itemsPerPage;
+    const indexOfFirstItem = indexOfLastItems - itemsPerPage;
+    const pageNumbers = [];
+    const items = data.filter(item => {
+      return item.perioxi.indexOf(this.state.select) >= 0;
+    });
+    for (let i = 1; i <= Math.ceil(items.length / itemsPerPage); i++) {
+      pageNumbers.push(i);
+    }
+    const currentItems = items.slice(indexOfFirstItem, indexOfLastItems);
+    const cards = currentItems.map((card, i) => {
+      return (
+        <Card key={i} style={{ margin: 3, padding: 1, width: 400 }}>
+          <CardBody>
+            <CardTitle>{card.onoma}</CardTitle>
+            <CardSubtitle>
+              {card.odos1}, {card.perioxi} , {card.thlefono}
+            </CardSubtitle>
+            <CardText>
+              {card.anoixta1} {card.anoixta2}
+            </CardText>
+            <a
+              rel="noopener noreferrer"
+              target="_blank"
+              href={`https://google.com//maps/place/${card.lat}+${card.lon}/@${
+                card.lat
+              },${card.lon},18z`}
+            >
+              <Button color="info">Map</Button>
+            </a>
+          </CardBody>
+        </Card>
+      );
+    });
+
+    const renderPageNumbers = pageNumbers.map((number, i) => {
+      return (
+        <Pagination aria-label="Page navigation example">
+          <PaginationItem>
+            <PaginationLink
+              // href="#"
+              key={i}
+              id={number}
+              onClick={e => this.setState({ currentPage: Number(e.target.id) })}
+            >
+              {number}
+            </PaginationLink>
+          </PaginationItem>
+        </Pagination>
+      );
+    });
 
     return (
       <div className="App">
@@ -226,6 +257,15 @@ class App extends Component {
           }}
         >
           {cards}
+        </div>
+        <div
+          style={{
+            display: "flex",
+            flexWrap: "wrap",
+            justifyContent: "center"
+          }}
+        >
+          {renderPageNumbers}
         </div>
       </div>
     );
